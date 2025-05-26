@@ -1,4 +1,3 @@
-// src/pages/home/HomePage.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, UserCheck, Settings } from 'lucide-react';

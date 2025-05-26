@@ -1,4 +1,3 @@
-// src/pages/volunteer/VolunteerConfirmationPage.tsx
 import {theme} from '../../styles/theme';
 export const VolunteerConfirmationPage: React.FC = () => {
   return (

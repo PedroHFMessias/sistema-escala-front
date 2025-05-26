@@ -1,4 +1,3 @@
-// src/pages/coordinator/MinistryManagementPage.tsx
 import {theme} from '../../styles/theme';
 export const MinistryManagementPage: React.FC = () => {
   return (

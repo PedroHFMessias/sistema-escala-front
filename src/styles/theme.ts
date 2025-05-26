@@ -1,4 +1,3 @@
-// src/styles/theme.ts
 export const theme = {
   colors: {
     // Cores principais (tons de azul para transmitir confiança e serenidade)

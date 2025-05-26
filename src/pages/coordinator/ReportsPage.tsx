@@ -1,4 +1,3 @@
-// src/pages/coordinator/ReportsPage.tsx
 import {theme} from '../../styles/theme';
 export const ReportsPage: React.FC = () => {
   return (

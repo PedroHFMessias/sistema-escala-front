@@ -1,4 +1,3 @@
-// src/pages/coordinator/ScheduleManagementPage.tsx
 import {theme} from '../../styles/theme';
 export const ScheduleManagementPage: React.FC = () => {
   return (
