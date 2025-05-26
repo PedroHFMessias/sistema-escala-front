@@ -1,6 +1,7 @@
-import React from 'react';
+// src/pages/home/HomePage.tsx
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, UserCheck, Settings } from 'lucide-react';
+import { Users, Calendar, UserCheck, Settings, ChevronDown } from 'lucide-react';
 import { theme } from '../../styles/theme';
 import { ChurchIcon } from '../../components/ui/ChurchIcon';
 
@@ -11,13 +12,41 @@ interface MenuOption {
   icon: React.ReactNode;
   color: string;
   userType: 'coordinator' | 'volunteer' | 'both';
+  hasSubmenu?: boolean;
+  submenuItems?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  path: string;
 }
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   
   // Mock do tipo de usuário - será implementado com autenticação posteriormente
   const userType: 'coordinator' | 'volunteer' = 'coordinator';
+
+  const cadastrosSubmenu: SubMenuItem[] = [
+    {
+      id: 'ministerios',
+      title: 'Ministérios',
+      description: 'Gerenciar ministérios da paróquia',
+      icon: <Users size={20} />,
+      path: '/cadastros/ministerios'
+    },
+    {
+      id: 'membros',
+      title: 'Membros',
+      description: 'Gerenciar voluntários',
+      icon: <UserCheck size={20} />,
+      path: '/cadastros/membros'
+    }
+  ];
 
   const menuOptions: MenuOption[] = [
     {
@@ -26,7 +55,9 @@ export const HomePage: React.FC = () => {
       description: 'Gerenciar ministérios e membros',
       icon: <Users size={32} />,
       color: theme.colors.primary[500],
-      userType: 'coordinator'
+      userType: 'coordinator',
+      hasSubmenu: true,
+      submenuItems: cadastrosSubmenu
     },
     {
       id: 'escalas',
@@ -58,27 +89,33 @@ export const HomePage: React.FC = () => {
     option => option.userType === 'both' || option.userType === userType
   );
 
-  const handleOptionClick = (optionId: string) => {
-    switch (optionId) {
-      case 'cadastros':
-        navigate('/cadastros/ministerios');
-        break;
-      case 'escalas':
-        if (userType === 'coordinator') {
-          navigate('/escalas/gerenciar');
-        } else {
-          navigate('/minhas-escalas');
-        }
-        break;
-      case 'confirmacoes':
-        navigate('/confirmacoes');
-        break;
-      case 'relatorios':
-        navigate('/relatorios');
-        break;
-      default:
-        console.log(`Navegando para: ${optionId}`);
+  const handleOptionClick = (option: MenuOption) => {
+    if (option.hasSubmenu) {
+      setOpenSubmenu(openSubmenu === option.id ? null : option.id);
+    } else {
+      switch (option.id) {
+        case 'escalas':
+          if (userType === 'coordinator') {
+            navigate('/escalas/gerenciar');
+          } else {
+            navigate('/minhas-escalas');
+          }
+          break;
+        case 'confirmacoes':
+          navigate('/confirmacoes');
+          break;
+        case 'relatorios':
+          navigate('/relatorios');
+          break;
+        default:
+          console.log(`Navegando para: ${option.id}`);
+      }
     }
+  };
+
+  const handleSubmenuClick = (path: string) => {
+    navigate(path);
+    setOpenSubmenu(null);
   };
 
   return (
@@ -121,106 +158,187 @@ export const HomePage: React.FC = () => {
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '1.5rem'
+              gap: '1.5rem',
+              position: 'relative'
             }}>
               {filteredOptions.map((option) => (
-                <div
-                  key={option.id}
-                  onClick={() => handleOptionClick(option.id)}
-                  style={{
-                    backgroundColor: theme.colors.white,
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: theme.borderRadius.xl,
-                    padding: '2rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease-in-out',
-                    boxShadow: theme.shadows.sm,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    gap: '1.5rem',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    minHeight: '200px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = theme.shadows.lg;
-                    e.currentTarget.style.borderColor = option.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = theme.shadows.sm;
-                    e.currentTarget.style.borderColor = theme.colors.border;
-                  }}
-                >
-                  {/* Background Pattern */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '80px',
-                    height: '80px',
-                    background: `linear-gradient(135deg, ${option.color}08, ${option.color}15)`,
-                    borderRadius: '0 0 0 80px'
-                  }}></div>
-                  
-                  {/* Icon */}
-                  <div 
+                <div key={option.id} style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => handleOptionClick(option)}
                     style={{
-                      padding: '1.5rem',
-                      borderRadius: '20px',
-                      backgroundColor: `${option.color}15`,
-                      color: option.color,
+                      backgroundColor: theme.colors.white,
+                      border: `1px solid ${theme.colors.border}`,
+                      borderRadius: theme.borderRadius.xl,
+                      padding: '2rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease-in-out',
+                      boxShadow: theme.shadows.sm,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '1.5rem',
                       position: 'relative',
-                      zIndex: 1
+                      overflow: 'hidden',
+                      minHeight: '200px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = theme.shadows.lg;
+                      e.currentTarget.style.borderColor = option.color;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = theme.shadows.sm;
+                      e.currentTarget.style.borderColor = theme.colors.border;
                     }}
                   >
-                    {option.icon}
-                  </div>
-                  
-                  {/* Content */}
-                  <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '1.25rem',
-                      fontWeight: '600',
-                      color: theme.colors.text.primary,
-                      marginBottom: '0.75rem'
+                    {/* Background Pattern */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: '80px',
+                      height: '80px',
+                      background: `linear-gradient(135deg, ${option.color}08, ${option.color}15)`,
+                      borderRadius: '0 0 0 80px'
+                    }}></div>
+                    
+                    {/* Icon */}
+                    <div 
+                      style={{
+                        padding: '1.5rem',
+                        borderRadius: '20px',
+                        backgroundColor: `${option.color}15`,
+                        color: option.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        zIndex: 1
+                      }}
+                    >
+                      {option.icon}
+                    </div>
+                    
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.75rem'
+                      }}>
+                        {option.title}
+                      </h3>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: theme.colors.text.secondary,
+                        lineHeight: '1.5'
+                      }}>
+                        {option.description}
+                      </p>
+                    </div>
+
+                    {/* Arrow indicator ou Submenu indicator */}
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: `${option.color}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
-                      {option.title}
-                    </h3>
-                    <p style={{
-                      fontSize: '0.875rem',
-                      color: theme.colors.text.secondary,
-                      lineHeight: '1.5'
-                    }}>
-                      {option.description}
-                    </p>
+                      {option.hasSubmenu ? (
+                        <ChevronDown 
+                          size={16} 
+                          color={option.color}
+                          style={{
+                            transform: openSubmenu === option.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease-in-out'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRight: `2px solid ${option.color}`,
+                          borderBottom: `2px solid ${option.color}`,
+                          transform: 'rotate(-45deg)',
+                          marginLeft: '2px'
+                        }}></div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Arrow indicator */}
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: `${option.color}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
+                  {/* Submenu Dropdown */}
+                  {option.hasSubmenu && openSubmenu === option.id && (
                     <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRight: `2px solid ${option.color}`,
-                      borderBottom: `2px solid ${option.color}`,
-                      transform: 'rotate(-45deg)',
-                      marginLeft: '2px'
-                    }}></div>
-                  </div>
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '0.5rem',
+                      backgroundColor: theme.colors.white,
+                      border: `1px solid ${theme.colors.border}`,
+                      borderRadius: theme.borderRadius.lg,
+                      boxShadow: theme.shadows.lg,
+                      zIndex: 1000,
+                      overflow: 'hidden'
+                    }}>
+                      {option.submenuItems?.map((subItem, index) => (
+                        <div
+                          key={subItem.id}
+                          onClick={() => handleSubmenuClick(subItem.path)}
+                          style={{
+                            padding: '1rem',
+                            cursor: 'pointer',
+                            borderBottom: index < option.submenuItems!.length - 1 ? `1px solid ${theme.colors.border}` : 'none',
+                            transition: 'background-color 0.2s ease-in-out',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = theme.colors.gray[50];
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <div style={{
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            backgroundColor: `${option.color}15`,
+                            color: option.color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {subItem.icon}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              color: theme.colors.text.primary,
+                              marginBottom: '0.25rem'
+                            }}>
+                              {subItem.title}
+                            </h4>
+                            <p style={{
+                              fontSize: '0.75rem',
+                              color: theme.colors.text.secondary,
+                              lineHeight: '1.4'
+                            }}>
+                              {subItem.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -680,6 +798,21 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Overlay para fechar submenu quando clicar fora */}
+      {openSubmenu && (
+        <div
+          onClick={() => setOpenSubmenu(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999
+          }}
+        />
+      )}
     </div>
   );
 };

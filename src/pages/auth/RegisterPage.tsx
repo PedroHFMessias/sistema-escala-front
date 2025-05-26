@@ -21,7 +21,7 @@ export const RegisterPage: React.FC = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    userType: 'volunteer'
+    userType: 'coordinator'
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -372,7 +372,6 @@ export const RegisterPage: React.FC = () => {
                     e.target.style.borderColor = theme.colors.border;
                   }}
                 >
-                  <option value="volunteer">🙏 Voluntário</option>
                   <option value="coordinator">👑 Coordenador</option>
                 </select>
               </div>
