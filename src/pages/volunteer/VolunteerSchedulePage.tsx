@@ -1,4 +1,3 @@
-// src/pages/volunteer/VolunteerSchedulePage.tsx
 import {theme} from '../../styles/theme';
 export const VolunteerSchedulePage: React.FC = () => {
   return (

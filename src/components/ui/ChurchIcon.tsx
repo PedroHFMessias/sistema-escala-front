@@ -1,4 +1,3 @@
-// src/components/ui/ChurchIcon.tsx
 import React from 'react';
 
 interface ChurchIconProps {
