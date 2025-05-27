@@ -1,29 +1,1250 @@
-import {theme} from '../../styles/theme';
-export const ScheduleManagementPage: React.FC = () => {
+// src/pages/shared/ScheduleManagementPage.tsx
+import React, { useState, useEffect } from 'react';
+import { 
+  Calendar, 
+  Plus, 
+  Search, 
+  Edit2, 
+  Trash2, 
+  Users, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle, 
+  XCircle,
+  Eye,
+  Download,
+  RefreshCw,
+  X,
+  Save
+} from 'lucide-react';
+import { theme } from '../../styles/theme';
+
+// Simulando dados de escalas
+const mockSchedules = [
+  {
+    id: '1',
+    date: '2025-06-01',
+    time: '19:00',
+    type: 'Missa Dominical',
+    ministry: 'Coro',
+    volunteers: [
+      { id: '1', name: 'Maria Silva', status: 'confirmado' },
+      { id: '2', name: 'João Santos', status: 'pendente' },
+      { id: '3', name: 'Ana Costa', status: 'confirmado' }
+    ],
+    notes: 'Primeira Comunhão - preparar cantos especiais',
+    createdAt: '2025-05-20T10:00:00Z'
+  },
+  {
+    id: '2',
+    date: '2025-06-01',
+    time: '08:00',
+    type: 'Missa Matinal',
+    ministry: 'Liturgia',
+    volunteers: [
+      { id: '4', name: 'Pedro Oliveira', status: 'confirmado' },
+      { id: '5', name: 'Carla Mendes', status: 'troca-solicitada' }
+    ],
+    notes: '',
+    createdAt: '2025-05-20T11:30:00Z'
+  },
+  {
+    id: '3',
+    date: '2025-06-02',
+    time: '19:00',
+    type: 'Missa Segunda',
+    ministry: 'Acolhida',
+    volunteers: [
+      { id: '6', name: 'Lucas Ferreira', status: 'pendente' },
+      { id: '7', name: 'Beatriz Lima', status: 'confirmado' },
+      { id: '8', name: 'Roberto Cruz', status: 'confirmado' }
+    ],
+    notes: 'Novena de Santo Antônio',
+    createdAt: '2025-05-21T09:15:00Z'
+  }
+];
+
+const mockMinistries = [
+  { id: '1', name: 'Coro', color: '#3b82f6' },
+  { id: '2', name: 'Liturgia', color: '#f59e0b' },
+  { id: '3', name: 'Acolhida', color: '#22c55e' },
+  { id: '4', name: 'Eucaristia', color: '#8b5cf6' },
+  { id: '5', name: 'Leitura', color: '#ef4444' }
+];
+
+const mockVolunteers = [
+  { id: '1', name: 'Maria Silva', ministries: ['1', '2'] },
+  { id: '2', name: 'João Santos', ministries: ['1'] },
+  { id: '3', name: 'Ana Costa', ministries: ['2', '3'] },
+  { id: '4', name: 'Pedro Oliveira', ministries: ['3'] },
+  { id: '5', name: 'Carla Mendes', ministries: ['2'] },
+  { id: '6', name: 'Lucas Ferreira', ministries: ['3', '4'] },
+  { id: '7', name: 'Beatriz Lima', ministries: ['1', '4'] },
+  { id: '8', name: 'Roberto Cruz', ministries: ['4', '5'] },
+  { id: '9', name: 'Patricia Santos', ministries: ['1', '5'] },
+  { id: '10', name: 'Ricardo Alves', ministries: ['2', '3'] }
+];
+
+const celebrationTypes = [
+  'Missa Dominical',
+  'Missa Matinal', 
+  'Missa Segunda',
+  'Missa Terça',
+  'Missa Quarta',
+  'Missa Quinta',
+  'Missa Sexta',
+  'Missa Sábado',
+  'Celebração Especial',
+  'Adoração',
+  'Via Sacra',
+  'Novena'
+];
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'confirmado': return theme.colors.success[500];
+    case 'pendente': return theme.colors.warning[500];
+    case 'troca-solicitada': return theme.colors.danger[500];
+    default: return theme.colors.gray[400];
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'confirmado': return <CheckCircle size={14} />;
+    case 'pendente': return <AlertCircle size={14} />;
+    case 'troca-solicitada': return <XCircle size={14} />;
+    default: return <AlertCircle size={14} />;
+  }
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pt-BR', { 
+    weekday: 'short', 
+    day: '2-digit', 
+    month: 'short' 
+  });
+};
+
+// Modal Component
+interface CreateScheduleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  schedule?: any;
+  onSave: (schedule: any) => void;
+}
+
+const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  schedule = null, 
+  onSave 
+}) => {
+  const [formData, setFormData] = useState({
+    type: schedule?.type || '',
+    date: schedule?.date || '',
+    time: schedule?.time || '',
+    ministry: schedule?.ministry || '',
+    volunteers: schedule?.volunteers || [],
+    notes: schedule?.notes || ''
+  });
+  
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [availableVolunteers, setAvailableVolunteers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (formData.ministry) {
+      const filtered = mockVolunteers.filter(volunteer => 
+        volunteer.ministries.includes(
+          mockMinistries.find(m => m.name === formData.ministry)?.id || ''
+        )
+      );
+      setAvailableVolunteers(filtered);
+    } else {
+      setAvailableVolunteers([]);
+    }
+  }, [formData.ministry]);
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const addVolunteer = (volunteer: any) => {
+    if (!formData.volunteers.find((v: any) => v.id === volunteer.id)) {
+      const newVolunteer = {
+        id: volunteer.id,
+        name: volunteer.name,
+        status: 'pendente'
+      };
+      handleInputChange('volunteers', [...formData.volunteers, newVolunteer]);
+    }
+  };
+
+  const removeVolunteer = (volunteerId: string) => {
+    handleInputChange('volunteers', formData.volunteers.filter((v: any) => v.id !== volunteerId));
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.type) newErrors.type = 'Tipo de celebração é obrigatório';
+    if (!formData.date) newErrors.date = 'Data é obrigatória';
+    if (!formData.time) newErrors.time = 'Horário é obrigatório';
+    if (!formData.ministry) newErrors.ministry = 'Ministério é obrigatório';
+    if (formData.volunteers.length === 0) newErrors.volunteers = 'Pelo menos um voluntário deve ser selecionado';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave({
+        ...formData,
+        id: schedule?.id || Date.now().toString(),
+        createdAt: schedule?.createdAt || new Date().toISOString()
+      });
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div style={{ padding: '2rem' }}>
-      <div className="container">
-        <h1 style={{ 
-          fontSize: '1.875rem', 
-          fontWeight: '600', 
-          color: theme.colors.text.primary,
-          marginBottom: '0.5rem'
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}>
+      <div style={{
+        backgroundColor: theme.colors.white,
+        borderRadius: theme.borderRadius.xl,
+        boxShadow: theme.shadows.lg,
+        width: '100%',
+        maxWidth: '800px',
+        maxHeight: '90vh',
+        overflow: 'auto'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: `1px solid ${theme.colors.border}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          Gerenciamento de Escalas
-        </h1>
-        <p style={{ 
-          color: theme.colors.text.secondary,
-          marginBottom: '2rem'
-        }}>
-          Crie e gerencie as escalas dos voluntários para as missas
-        </p>
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            color: theme.colors.text.primary
+          }}>
+            {schedule ? 'Editar Escala' : 'Nova Escala'}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '0.5rem',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: theme.borderRadius.md,
+              cursor: 'pointer',
+              color: theme.colors.gray[400]
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* Celebration Type */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: theme.colors.text.primary,
+                marginBottom: '0.5rem'
+              }}>
+                Tipo de Celebração *
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => handleInputChange('type', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: `1px solid ${errors.type ? theme.colors.danger[500] : theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  backgroundColor: theme.colors.white
+                }}
+              >
+                <option value="">Selecione o tipo</option>
+                {celebrationTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              {errors.type && (
+                <p style={{ fontSize: '0.75rem', color: theme.colors.danger[500], marginTop: '0.25rem' }}>
+                  {errors.type}
+                </p>
+              )}
+            </div>
+
+            {/* Ministry */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: theme.colors.text.primary,
+                marginBottom: '0.5rem'
+              }}>
+                Ministério *
+              </label>
+              <select
+                value={formData.ministry}
+                onChange={(e) => handleInputChange('ministry', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: `1px solid ${errors.ministry ? theme.colors.danger[500] : theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  backgroundColor: theme.colors.white
+                }}
+              >
+                <option value="">Selecione o ministério</option>
+                {mockMinistries.map(ministry => (
+                  <option key={ministry.id} value={ministry.name}>{ministry.name}</option>
+                ))}
+              </select>
+              {errors.ministry && (
+                <p style={{ fontSize: '0.75rem', color: theme.colors.danger[500], marginTop: '0.25rem' }}>
+                  {errors.ministry}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* Date */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: theme.colors.text.primary,
+                marginBottom: '0.5rem'
+              }}>
+                Data *
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: `1px solid ${errors.date ? theme.colors.danger[500] : theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  backgroundColor: theme.colors.white
+                }}
+              />
+              {errors.date && (
+                <p style={{ fontSize: '0.75rem', color: theme.colors.danger[500], marginTop: '0.25rem' }}>
+                  {errors.date}
+                </p>
+              )}
+            </div>
+
+            {/* Time */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: theme.colors.text.primary,
+                marginBottom: '0.5rem'
+              }}>
+                Horário *
+              </label>
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => handleInputChange('time', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: `1px solid ${errors.time ? theme.colors.danger[500] : theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  backgroundColor: theme.colors.white
+                }}
+              />
+              {errors.time && (
+                <p style={{ fontSize: '0.75rem', color: theme.colors.danger[500], marginTop: '0.25rem' }}>
+                  {errors.time}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Volunteers Section */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: theme.colors.text.primary,
+              marginBottom: '0.5rem'
+            }}>
+              Voluntários * {formData.ministry && `(${availableVolunteers.length} disponíveis)`}
+            </label>
+
+            {/* Selected Volunteers */}
+            {formData.volunteers.length > 0 && (
+              <div style={{
+                backgroundColor: theme.colors.gray[50],
+                borderRadius: theme.borderRadius.md,
+                padding: '1rem',
+                marginBottom: '1rem'
+              }}>
+                <h4 style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: theme.colors.text.primary,
+                  marginBottom: '0.75rem'
+                }}>
+                  Voluntários Selecionados ({formData.volunteers.length})
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {formData.volunteers.map((volunteer: any) => (
+                    <div
+                      key={volunteer.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 0.75rem',
+                        backgroundColor: theme.colors.white,
+                        borderRadius: theme.borderRadius.md,
+                        border: `1px solid ${theme.colors.border}`,
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <span>{volunteer.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeVolunteer(volunteer.id)}
+                        style={{
+                          padding: '0.25rem',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: theme.colors.danger[500],
+                          borderRadius: '4px'
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Available Volunteers */}
+            {formData.ministry ? (
+              <div>
+                <h4 style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: theme.colors.text.primary,
+                  marginBottom: '0.75rem'
+                }}>
+                  Adicionar Voluntários
+                </h4>
+                {availableVolunteers.length > 0 ? (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '0.5rem',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    padding: '0.5rem',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: theme.borderRadius.md
+                  }}>
+                    {availableVolunteers
+                      .filter(volunteer => !formData.volunteers.find((v: any) => v.id === volunteer.id))
+                      .map(volunteer => (
+                        <button
+                          key={volunteer.id}
+                          type="button"
+                          onClick={() => addVolunteer(volunteer)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.5rem 0.75rem',
+                            backgroundColor: 'transparent',
+                            border: `1px solid ${theme.colors.border}`,
+                            borderRadius: theme.borderRadius.md,
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            transition: 'all 0.2s',
+                            textAlign: 'left'
+                          }}
+                          onMouseEnter={(e) => {
+                            const target = e.target as HTMLElement;
+                            target.style.backgroundColor = theme.colors.primary[500];
+                            target.style.color = theme.colors.white;
+                            target.style.borderColor = theme.colors.primary[500];
+                          }}
+                          onMouseLeave={(e) => {
+                            const target = e.target as HTMLElement;
+                            target.style.backgroundColor = 'transparent';
+                            target.style.color = theme.colors.text.primary;
+                            target.style.borderColor = theme.colors.border;
+                          }}
+                        >
+                          <Plus size={14} />
+                          {volunteer.name}
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '2rem',
+                    textAlign: 'center',
+                    color: theme.colors.text.secondary,
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: theme.borderRadius.md
+                  }}>
+                    <Users size={24} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                    <p>Nenhum voluntário disponível para este ministério</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                padding: '2rem',
+                textAlign: 'center',
+                color: theme.colors.text.secondary,
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                backgroundColor: theme.colors.gray[50]
+              }}>
+                <AlertCircle size={24} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                <p>Selecione um ministério para ver os voluntários disponíveis</p>
+              </div>
+            )}
+
+            {errors.volunteers && (
+              <p style={{ fontSize: '0.75rem', color: theme.colors.danger[500], marginTop: '0.5rem' }}>
+                {errors.volunteers}
+              </p>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div style={{ marginBottom: '2rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: theme.colors.text.primary,
+              marginBottom: '0.5rem'
+            }}>
+              Observações
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              placeholder="Adicione observações sobre esta escala..."
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                fontSize: '0.875rem',
+                outline: 'none',
+                resize: 'vertical',
+                fontFamily: 'inherit'
+              }}
+            />
+          </div>
+
+          {/* Form Actions */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '1rem',
+            paddingTop: '1rem',
+            borderTop: `1px solid ${theme.colors.border}`
+          }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: 'transparent',
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: theme.colors.text.secondary
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: theme.colors.primary[500],
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: theme.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Save size={16} />
+              {schedule ? 'Atualizar Escala' : 'Criar Escala'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Main Component
+export const ScheduleManagementPage: React.FC = () => {
+  const [schedules, setSchedules] = useState(mockSchedules);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMinistry, setFilterMinistry] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'calendar'
+
+  const filteredSchedules = schedules.filter(schedule => {
+    const matchesSearch = schedule.ministry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.volunteers.some((v: any) => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesMinistry = !filterMinistry || schedule.ministry === filterMinistry;
+    
+    const matchesStatus = !filterStatus || 
+                         schedule.volunteers.some((v: any) => v.status === filterStatus);
+    
+    return matchesSearch && matchesMinistry && matchesStatus;
+  });
+
+  const handleCreateSchedule = () => {
+    setSelectedSchedule(null);
+    setShowCreateModal(true);
+  };
+
+  const handleEditSchedule = (schedule: any) => {
+    setSelectedSchedule(schedule);
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteSchedule = (scheduleId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta escala?')) {
+      setSchedules(schedules.filter(s => s.id !== scheduleId));
+    }
+  };
+
+  const handleSaveSchedule = (scheduleData: any) => {
+    if (selectedSchedule) {
+      // Edit existing schedule
+      setSchedules(schedules.map(s => 
+        s.id === selectedSchedule.id ? { ...scheduleData } : s
+      ));
+    } else {
+      // Create new schedule
+      setSchedules([...schedules, scheduleData]);
+    }
+    setShowCreateModal(false);
+    setSelectedSchedule(null);
+  };
+
+  const getStatusStats = () => {
+    const allVolunteers = schedules.flatMap(s => s.volunteers);
+    return {
+      confirmado: allVolunteers.filter((v: any) => v.status === 'confirmado').length,
+      pendente: allVolunteers.filter((v: any) => v.status === 'pendente').length,
+      trocaSolicitada: allVolunteers.filter((v: any) => v.status === 'troca-solicitada').length,
+      total: allVolunteers.length
+    };
+  };
+
+  const stats = getStatusStats();
+
+  return (
+    <div style={{ padding: '2rem', backgroundColor: theme.colors.gray[50], minHeight: '100vh' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        <div className="card">
-          <p style={{ color: theme.colors.text.secondary }}>
-            Funcionalidade de gerenciamento de escalas será implementada aqui
-          </p>
+        {/* Header */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+            <div>
+              <h1 style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: '600', 
+                color: theme.colors.text.primary,
+                marginBottom: '0.5rem'
+              }}>
+                Gerenciamento de Escalas
+              </h1>
+              <p style={{ color: theme.colors.text.secondary }}>
+                Crie e gerencie as escalas dos voluntários para as celebrações
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button
+                onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+                style={{
+                  padding: '0.75rem 1rem',
+                  backgroundColor: theme.colors.gray[100],
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: theme.colors.text.primary
+                }}
+              >
+                <Calendar size={16} />
+                {viewMode === 'list' ? 'Visão Calendário' : 'Visão Lista'}
+              </button>
+              
+              <button
+                onClick={handleCreateSchedule}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: theme.colors.primary[500],
+                  color: theme.colors.white,
+                  border: 'none',
+                  borderRadius: theme.borderRadius.md,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                <Plus size={16} />
+                Nova Escala
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)', 
+            gap: '1rem',
+            marginBottom: '2rem' 
+          }}>
+            <div style={{
+              backgroundColor: theme.colors.white,
+              padding: '1.5rem',
+              borderRadius: theme.borderRadius.lg,
+              border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.sm
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.primary[50],
+                  borderRadius: '12px',
+                  color: theme.colors.primary[500]
+                }}>
+                  <Users size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '700', color: theme.colors.text.primary }}>
+                    {stats.total}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: theme.colors.text.secondary }}>
+                    Total de Escalas
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: theme.colors.white,
+              padding: '1.5rem',
+              borderRadius: theme.borderRadius.lg,
+              border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.sm
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.success[50],
+                  borderRadius: '12px',
+                  color: theme.colors.success[500]
+                }}>
+                  <CheckCircle size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '700', color: theme.colors.text.primary }}>
+                    {stats.confirmado}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: theme.colors.text.secondary }}>
+                    Confirmados
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: theme.colors.white,
+              padding: '1.5rem',
+              borderRadius: theme.borderRadius.lg,
+              border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.sm
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.warning[50],
+                  borderRadius: '12px',
+                  color: theme.colors.warning[500]
+                }}>
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '700', color: theme.colors.text.primary }}>
+                    {stats.pendente}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: theme.colors.text.secondary }}>
+                    Pendentes
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: theme.colors.white,
+              padding: '1.5rem',
+              borderRadius: theme.borderRadius.lg,
+              border: `1px solid ${theme.colors.border}`,
+              boxShadow: theme.shadows.sm
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.danger[50],
+                  borderRadius: '12px',
+                  color: theme.colors.danger[500]
+                }}>
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '1.5rem', fontWeight: '700', color: theme.colors.text.primary }}>
+                    {stats.trocaSolicitada}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: theme.colors.text.secondary }}>
+                    Trocas Solicitadas
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{
+          backgroundColor: theme.colors.white,
+          padding: '1.5rem',
+          borderRadius: theme.borderRadius.lg,
+          border: `1px solid ${theme.colors.border}`,
+          marginBottom: '1.5rem',
+          boxShadow: theme.shadows.sm
+        }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {/* Search */}
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search 
+                size={16} 
+                style={{
+                  position: 'absolute',
+                  left: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: theme.colors.gray[400]
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Buscar por ministério, tipo ou voluntário..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 0.75rem 0.75rem 2.5rem',
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: '0.875rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            {/* Ministry Filter */}
+            <select
+              value={filterMinistry}
+              onChange={(e) => setFilterMinistry(e.target.value)}
+              style={{
+                padding: '0.75rem',
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                fontSize: '0.875rem',
+                outline: 'none',
+                backgroundColor: theme.colors.white,
+                minWidth: '150px'
+              }}
+            >
+              <option value="">Todos os Ministérios</option>
+              {mockMinistries.map(ministry => (
+                <option key={ministry.id} value={ministry.name}>
+                  {ministry.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              style={{
+                padding: '0.75rem',
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                fontSize: '0.875rem',
+                outline: 'none',
+                backgroundColor: theme.colors.white,
+                minWidth: '150px'
+              }}
+            >
+              <option value="">Todos os Status</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="pendente">Pendente</option>
+              <option value="troca-solicitada">Troca Solicitada</option>
+            </select>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.gray[100],
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  cursor: 'pointer',
+                  color: theme.colors.text.secondary
+                }}
+                title="Atualizar"
+              >
+                <RefreshCw size={16} />
+              </button>
+              
+              <button
+                style={{
+                  padding: '0.75rem',
+                  backgroundColor: theme.colors.gray[100],
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.borderRadius.md,
+                  cursor: 'pointer',
+                  color: theme.colors.text.secondary
+                }}
+                title="Exportar"
+              >
+                <Download size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Schedules List */}
+        <div style={{
+          backgroundColor: theme.colors.white,
+          borderRadius: theme.borderRadius.lg,
+          border: `1px solid ${theme.colors.border}`,
+          boxShadow: theme.shadows.sm
+        }}>
+          {filteredSchedules.length === 0 ? (
+            <div style={{
+              padding: '3rem',
+              textAlign: 'center',
+              color: theme.colors.text.secondary
+            }}>
+              <Calendar size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Nenhuma escala encontrada
+              </h3>
+              <p>Tente ajustar os filtros ou criar uma nova escala.</p>
+            </div>
+          ) : (
+            <div>
+              {/* Table Header */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 120px 150px 200px 120px 100px',
+                gap: '1rem',
+                padding: '1rem 1.5rem',
+                backgroundColor: theme.colors.gray[50],
+                borderBottom: `1px solid ${theme.colors.border}`,
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: theme.colors.text.secondary
+              }}>
+                <div>Celebração</div>
+                <div>Data</div>
+                <div>Horário</div>
+                <div>Ministério</div>
+                <div>Voluntários</div>
+                <div>Ações</div>
+              </div>
+
+              {/* Table Body */}
+              {filteredSchedules.map((schedule) => (
+                <div
+                  key={schedule.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 120px 150px 200px 120px 100px',
+                    gap: '1rem',
+                    padding: '1rem 1.5rem',
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                    alignItems: 'center'
+                  }}
+                >
+                  {/* Celebration */}
+                  <div>
+                    <h4 style={{ 
+                      fontSize: '0.875rem', 
+                      fontWeight: '500', 
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.25rem'
+                    }}>
+                      {schedule.type}
+                    </h4>
+                    <p style={{ 
+                      fontSize: '0.75rem', 
+                      color: theme.colors.text.secondary 
+                    }}>
+                      Criado em {new Date(schedule.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+
+                  {/* Date */}
+                  <div style={{ fontSize: '0.875rem', color: theme.colors.text.primary }}>
+                    {formatDate(schedule.date)}
+                  </div>
+
+                  {/* Time */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    fontSize: '0.875rem', 
+                    color: theme.colors.text.primary 
+                  }}>
+                    <Clock size={14} />
+                    {schedule.time}
+                  </div>
+
+                  {/* Ministry */}
+                  <div>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      backgroundColor: `${mockMinistries.find(m => m.name === schedule.ministry)?.color}20`,
+                      color: mockMinistries.find(m => m.name === schedule.ministry)?.color,
+                      borderRadius: theme.borderRadius.md,
+                      fontSize: '0.75rem',
+                      fontWeight: '500'
+                    }}>
+                      {schedule.ministry}
+                    </span>
+                  </div>
+
+                  {/* Volunteers */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {schedule.volunteers.slice(0, 2).map((volunteer: any) => (
+                      <div
+                        key={volunteer.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        <span style={{ color: getStatusColor(volunteer.status) }}>
+                          {getStatusIcon(volunteer.status)}
+                        </span>
+                        <span style={{ color: theme.colors.text.secondary }}>
+                          {volunteer.name}
+                        </span>
+                      </div>
+                    ))}
+                    {schedule.volunteers.length > 2 && (
+                      <div style={{ fontSize: '0.75rem', color: theme.colors.text.secondary }}>
+                        +{schedule.volunteers.length - 2} mais
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setSelectedSchedule(schedule)}
+                      style={{
+                        padding: '0.5rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderRadius: theme.borderRadius.md,
+                        cursor: 'pointer',
+                        color: theme.colors.primary[500]
+                      }}
+                      title="Visualizar"
+                    >
+                      <Eye size={14} />
+                    </button>
+                    
+                    <button
+                      onClick={() => handleEditSchedule(schedule)}
+                      style={{
+                        padding: '0.5rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderRadius: theme.borderRadius.md,
+                        cursor: 'pointer',
+                        color: theme.colors.warning[500]
+                      }}
+                      title="Editar"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDeleteSchedule(schedule.id)}
+                      style={{
+                        padding: '0.5rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderRadius: theme.borderRadius.md,
+                        cursor: 'pointer',
+                        color: theme.colors.danger[500]
+                      }}
+                      title="Excluir"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions Footer */}
+        <div style={{
+          marginTop: '2rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1rem',
+          backgroundColor: theme.colors.white,
+          borderRadius: theme.borderRadius.lg,
+          border: `1px solid ${theme.colors.border}`,
+          boxShadow: theme.shadows.sm
+        }}>
+          <div style={{ fontSize: '0.875rem', color: theme.colors.text.secondary }}>
+            Mostrando {filteredSchedules.length} de {schedules.length} escalas
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: theme.colors.gray[100],
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: theme.colors.text.primary
+              }}
+            >
+              Exportar Escalas
+            </button>
+            
+            <button
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: theme.colors.primary[500],
+                color: theme.colors.white,
+                border: 'none',
+                borderRadius: theme.borderRadius.md,
+                cursor: 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              Enviar Notificações
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Modal */}
+      <CreateScheduleModal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setSelectedSchedule(null);
+        }}
+        schedule={selectedSchedule}
+        onSave={handleSaveSchedule}
+      />
     </div>
   );
 };
