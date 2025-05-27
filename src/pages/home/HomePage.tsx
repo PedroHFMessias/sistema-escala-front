@@ -48,6 +48,38 @@ export const HomePage: React.FC = () => {
     }
   ];
 
+  const escalasSubmenu: SubMenuItem[] = userType === 'coordinator' ? [
+    {
+      id: 'gerenciar-escalas',
+      title: 'Gerenciar Escalas',
+      description: 'Criar e editar escalas',
+      icon: <Settings size={20} />,
+      path: '/escalas/gerenciar'
+    },
+    {
+      id: 'visualizar-escalas',
+      title: 'Visualizar Escalas',
+      description: 'Ver todas as escalas',
+      icon: <Calendar size={20} />,
+      path: '/escalas'
+    }
+  ] : [
+    {
+      id: 'minhas-escalas',
+      title: 'Minhas Escalas',
+      description: 'Ver minhas escalas',
+      icon: <Calendar size={20} />,
+      path: '/minhas-escalas'
+    },
+    {
+      id: 'visualizar-escalas',
+      title: 'Todas as Escalas',
+      description: 'Ver escalas da paróquia',
+      icon: <Calendar size={20} />,
+      path: '/escalas'
+    }
+  ];
+
   const menuOptions: MenuOption[] = [
     {
       id: 'cadastros',
@@ -62,10 +94,12 @@ export const HomePage: React.FC = () => {
     {
       id: 'escalas',
       title: 'Escalas',
-      description: 'Criar e gerenciar escalas das missas',
+      description: userType === 'coordinator' ? 'Criar e gerenciar escalas das missas' : 'Visualizar e confirmar suas escalas',
       icon: <Calendar size={32} />,
       color: theme.colors.secondary[500],
-      userType: 'both'
+      userType: 'both',
+      hasSubmenu: true,
+      submenuItems: escalasSubmenu
     },
     {
       id: 'confirmacoes',
@@ -74,14 +108,6 @@ export const HomePage: React.FC = () => {
       icon: <UserCheck size={32} />,
       color: theme.colors.success[500],
       userType: 'volunteer'
-    },
-    {
-      id: 'relatorios',
-      title: 'Relatórios',
-      description: 'Visualizar relatórios e estatísticas',
-      icon: <Settings size={32} />,
-      color: theme.colors.primary[700],
-      userType: 'coordinator'
     }
   ];
 
@@ -94,18 +120,8 @@ export const HomePage: React.FC = () => {
       setOpenSubmenu(openSubmenu === option.id ? null : option.id);
     } else {
       switch (option.id) {
-        case 'escalas':
-          if (userType === 'coordinator') {
-            navigate('/escalas/gerenciar');
-          } else {
-            navigate('/minhas-escalas');
-          }
-          break;
         case 'confirmacoes':
           navigate('/confirmacoes');
-          break;
-        case 'relatorios':
-          navigate('/relatorios');
           break;
         default:
           console.log(`Navegando para: ${option.id}`);
@@ -157,7 +173,7 @@ export const HomePage: React.FC = () => {
           <div>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
+              gridTemplateColumns: userType === 'coordinator' ? 'repeat(2, 1fr)' : '1fr',
               gap: '1.5rem',
               position: 'relative'
             }}>

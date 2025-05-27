@@ -5,16 +5,15 @@ import { HomePage } from '../pages/home/HomePage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 
-// Coordinator Pages (placeholders)
+// Coordinator Pages
 import { MinistryManagementPage } from '../pages/coordinator/MinistryManagementePage';
 import { MemberManagementPage } from '../pages/coordinator/MemberManagementPage';
-import { ReportsPage } from '../pages/coordinator/ReportsPage';
 
-// Volunteer Pages (placeholders)
+// Volunteer Pages
 import { VolunteerSchedulePage } from '../pages/volunteer/VolunteerSchedulePage';
 import { VolunteerConfirmationPage } from '../pages/volunteer/VolunteerConfirmationPage';
 
-// Shared Pages (placeholders)
+// Shared Pages
 import { ScheduleManagementPage } from '../pages/shared/ScheduleManagementPage';
 
 // Protected Route Component
@@ -81,18 +80,11 @@ export const AppRouter: React.FC = () => {
           </ProtectedRoute>
         } />
 
+        {/* Schedule Management - Coordinator */}
         <Route path="/escalas/gerenciar" element={
           <ProtectedRoute requiredRole="coordinator">
             <Layout>
               <ScheduleManagementPage />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/relatorios" element={
-          <ProtectedRoute requiredRole="coordinator">
-            <Layout>
-              <ReportsPage />
             </Layout>
           </ProtectedRoute>
         } />
@@ -114,7 +106,7 @@ export const AppRouter: React.FC = () => {
           </ProtectedRoute>
         } />
 
-        {/* Shared Routes */}
+        {/* Shared Routes - Schedule Viewing */}
         <Route path="/escalas" element={
           <ProtectedRoute>
             <Layout>

@@ -8,7 +8,6 @@ import {
   Calendar, 
   UserCheck, 
   Settings, 
-  FileText,
   LogOut,
   ChevronDown,
   User
@@ -116,13 +115,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: <UserCheck size={20} />,
       path: '/confirmacoes',
       role: 'volunteer'
-    },
-    {
-      id: 'relatorios',
-      label: 'Relatórios',
-      icon: <FileText size={20} />,
-      path: '/relatorios',
-      role: 'coordinator'
     }
   ];
 
