@@ -1,4 +1,3 @@
-// src/pages/shared/ScheduleManagementPage.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 

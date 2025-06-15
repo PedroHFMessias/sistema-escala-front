@@ -1,8 +1,23 @@
+// src/types/index.ts
+
+export interface Address {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
+  cpf: string;
+  rg: string;
+  address: Address;
   userType: 'coordinator' | 'volunteer';
   createdAt: Date;
   updatedAt: Date;
@@ -80,7 +95,12 @@ export interface CreateUserForm {
   name: string;
   email: string;
   phone: string;
+  cpf: string;
+  rg: string;
+  address: Address;
   userType: UserType;
+  password: string;
+  ministries: string[];
 }
 
 export interface CreateMinistryForm {
@@ -111,3 +131,30 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+// Interfaces para validação
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface FormErrors {
+  [key: string]: string;
+}
+
+// Utilitários para formatação
+export interface FormatUtils {
+  phone: (value: string) => string;
+  cpf: (value: string) => string;
+  rg: (value: string) => string;
+  zipCode: (value: string) => string;
+}
+
+// Estados do Brasil para validação
+export const BRAZILIAN_STATES = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+] as const;
+
+export type BrazilianState = typeof BRAZILIAN_STATES[number];

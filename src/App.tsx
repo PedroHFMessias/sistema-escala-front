@@ -1,5 +1,3 @@
-// src/App.tsx
-import React from 'react';
 import { AppRouter } from './router/AppRouter';
 import './styles/globals.css';
 
@@ -12,4 +10,3 @@ function App() {
 }
 
 export default App;
-

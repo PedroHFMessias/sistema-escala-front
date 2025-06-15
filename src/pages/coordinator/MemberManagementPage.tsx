@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   Search, 
-  Filter, 
   Edit, 
   Trash2, 
   User, 
@@ -16,7 +15,10 @@ import {
   AlertCircle,
   UserPlus,
   Eye,
-  EyeOff
+  EyeOff,
+  CreditCard,
+  MapPin,
+  FileText
 } from 'lucide-react';
 import { theme } from '../../styles/theme';
 
@@ -25,6 +27,17 @@ interface Member {
   name: string;
   email: string;
   phone: string;
+  cpf: string;
+  rg: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
   userType: 'coordinator' | 'volunteer';
   ministries: string[];
   status: 'active' | 'inactive';
@@ -41,6 +54,17 @@ interface MemberForm {
   name: string;
   email: string;
   phone: string;
+  cpf: string;
+  rg: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string; // Opcional no formulário também
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
   password: string;
   userType: 'coordinator' | 'volunteer';
   ministries: string[];
@@ -57,6 +81,17 @@ export const MemberManagementPage: React.FC = () => {
     name: '',
     email: '',
     phone: '',
+    cpf: '',
+    rg: '',
+    address: {
+      street: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    },
     password: '',
     userType: 'volunteer',
     ministries: []
@@ -71,6 +106,17 @@ export const MemberManagementPage: React.FC = () => {
       name: 'Maria Silva',
       email: 'maria.silva@email.com',
       phone: '(11) 99999-1234',
+      cpf: '123.456.789-00',
+      rg: '12.345.678-9',
+      address: {
+        street: 'Rua das Flores',
+        number: '123',
+        complement: 'Apto 45',
+        neighborhood: 'Centro',
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: '01234-567'
+      },
       userType: 'volunteer',
       ministries: ['ministerio-1', 'ministerio-2'],
       status: 'active',
@@ -81,20 +127,21 @@ export const MemberManagementPage: React.FC = () => {
       name: 'João Santos',
       email: 'joao.santos@email.com',
       phone: '(11) 88888-5678',
+      cpf: '987.654.321-00',
+      rg: '98.765.432-1',
+      address: {
+        street: 'Av. Paulista',
+        number: '1000',
+        complement: '',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP',
+        zipCode: '01310-100'
+      },
       userType: 'coordinator',
       ministries: ['ministerio-1'],
       status: 'active',
       createdAt: new Date('2024-02-20')
-    },
-    {
-      id: '3',
-      name: 'Ana Costa',
-      email: 'ana.costa@email.com',
-      phone: '(11) 77777-9876',
-      userType: 'volunteer',
-      ministries: ['ministerio-3'],
-      status: 'inactive',
-      createdAt: new Date('2024-03-10')
     }
   ]);
 
@@ -113,6 +160,7 @@ export const MemberManagementPage: React.FC = () => {
     return ministries.find(m => m.id === id)?.color || theme.colors.gray[500];
   };
 
+  // Formatação de telefone
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 11) {
@@ -129,12 +177,105 @@ export const MemberManagementPage: React.FC = () => {
     return value;
   };
 
+  // Formatação de CPF
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      const match = numbers.match(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})$/);
+      if (match) {
+        let formatted = match[1];
+        if (match[2]) formatted += `.${match[2]}`;
+        if (match[3]) formatted += `.${match[3]}`;
+        if (match[4]) formatted += `-${match[4]}`;
+        return formatted;
+      }
+    }
+    return value;
+  };
+
+  // Formatação de RG
+  const formatRG = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 9) {
+      const match = numbers.match(/^(\d{0,2})(\d{0,3})(\d{0,3})(\d{0,1})$/);
+      if (match) {
+        let formatted = match[1];
+        if (match[2]) formatted += `.${match[2]}`;
+        if (match[3]) formatted += `.${match[3]}`;
+        if (match[4]) formatted += `-${match[4]}`;
+        return formatted;
+      }
+    }
+    return value;
+  };
+
+  // Formatação de CEP
+  const formatZipCode = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 8) {
+      const match = numbers.match(/^(\d{0,5})(\d{0,3})$/);
+      if (match) {
+        let formatted = match[1];
+        if (match[2]) formatted += `-${match[2]}`;
+        return formatted;
+      }
+    }
+    return value;
+  };
+
+  // Validação de CPF
+  const validateCPF = (cpf: string) => {
+    const cleanCPF = cpf.replace(/\D/g, '');
+    if (cleanCPF.length !== 11) return false;
+    
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
+    
+    // Validação do primeiro dígito verificador
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+    }
+    let remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
+    
+    // Validação do segundo dígito verificador
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
+    
+    return true;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     if (name === 'phone') {
       const formattedPhone = formatPhone(value);
       setFormData(prev => ({ ...prev, [name]: formattedPhone }));
+    } else if (name === 'cpf') {
+      const formattedCPF = formatCPF(value);
+      setFormData(prev => ({ ...prev, [name]: formattedCPF }));
+    } else if (name === 'rg') {
+      const formattedRG = formatRG(value);
+      setFormData(prev => ({ ...prev, [name]: formattedRG }));
+    } else if (name === 'zipCode') {
+      const formattedZipCode = formatZipCode(value);
+      setFormData(prev => ({ 
+        ...prev, 
+        address: { ...prev.address, zipCode: formattedZipCode }
+      }));
+    } else if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData(prev => ({ 
+        ...prev, 
+        address: { ...prev.address, [addressField]: value }
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -170,6 +311,45 @@ export const MemberManagementPage: React.FC = () => {
       newErrors.phone = 'Telefone é obrigatório';
     } else if (!/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(formData.phone)) {
       newErrors.phone = 'Formato: (11) 99999-9999';
+    }
+
+    if (!formData.cpf) {
+      newErrors.cpf = 'CPF é obrigatório';
+    } else if (!validateCPF(formData.cpf)) {
+      newErrors.cpf = 'CPF inválido';
+    }
+
+    if (!formData.rg) {
+      newErrors.rg = 'RG é obrigatório';
+    } else if (formData.rg.replace(/\D/g, '').length < 8) {
+      newErrors.rg = 'RG deve ter pelo menos 8 dígitos';
+    }
+
+    // Validação do endereço
+    if (!formData.address.street.trim()) {
+      newErrors['address.street'] = 'Logradouro é obrigatório';
+    }
+
+    if (!formData.address.number.trim()) {
+      newErrors['address.number'] = 'Número é obrigatório';
+    }
+
+    if (!formData.address.neighborhood.trim()) {
+      newErrors['address.neighborhood'] = 'Bairro é obrigatório';
+    }
+
+    if (!formData.address.city.trim()) {
+      newErrors['address.city'] = 'Cidade é obrigatória';
+    }
+
+    if (!formData.address.state.trim()) {
+      newErrors['address.state'] = 'Estado é obrigatório';
+    }
+
+    if (!formData.address.zipCode) {
+      newErrors['address.zipCode'] = 'CEP é obrigatório';
+    } else if (!/^\d{5}-\d{3}$/.test(formData.address.zipCode)) {
+      newErrors['address.zipCode'] = 'Formato: 12345-678';
     }
 
     if (!editingMember && !formData.password) {
@@ -222,6 +402,17 @@ export const MemberManagementPage: React.FC = () => {
       name: '',
       email: '',
       phone: '',
+      cpf: '',
+      rg: '',
+      address: {
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+        zipCode: ''
+      },
       password: '',
       userType: 'volunteer',
       ministries: []
@@ -237,6 +428,9 @@ export const MemberManagementPage: React.FC = () => {
       name: member.name,
       email: member.email,
       phone: member.phone,
+      cpf: member.cpf,
+      rg: member.rg,
+      address: member.address,
       password: '',
       userType: member.userType,
       ministries: member.ministries
@@ -261,7 +455,8 @@ export const MemberManagementPage: React.FC = () => {
 
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         member.cpf.includes(searchTerm.replace(/\D/g, ''));
     
     const matchesType = filterType === 'all' || member.userType === filterType;
     
@@ -491,7 +686,7 @@ export const MemberManagementPage: React.FC = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Nome ou email..."
+                  placeholder="Nome, email ou CPF..."
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 3rem',
@@ -597,7 +792,7 @@ export const MemberManagementPage: React.FC = () => {
               backgroundColor: theme.colors.white,
               borderRadius: theme.borderRadius.xl,
               padding: '2rem',
-              maxWidth: '600px',
+              maxWidth: '800px',
               width: '100%',
               maxHeight: '90vh',
               overflow: 'auto',
@@ -637,8 +832,8 @@ export const MemberManagementPage: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* Name */}
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* User Type */}
                 <div>
                   <label style={{
                     display: 'block',
@@ -647,161 +842,619 @@ export const MemberManagementPage: React.FC = () => {
                     color: theme.colors.text.primary,
                     marginBottom: '0.5rem'
                   }}>
-                    Nome Completo
+                    Tipo de Usuário
                   </label>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: '1rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: theme.colors.text.secondary
-                    }}>
-                      <User size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Nome completo do membro"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem 0.75rem 3rem',
-                        border: `1px solid ${errors.name ? theme.colors.danger[500] : theme.colors.border}`,
-                        borderRadius: theme.borderRadius.md,
-                        fontSize: '1rem',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease-in-out'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = theme.colors.primary[500];
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = errors.name ? theme.colors.danger[500] : theme.colors.border;
-                      }}
-                    />
-                  </div>
-                  {errors.name && (
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: theme.colors.danger[500],
-                      marginTop: '0.25rem'
-                    }}>
-                      {errors.name}
-                    </p>
-                  )}
+                  <select
+                    name="userType"
+                    value={formData.userType}
+                    onChange={handleInputChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: `1px solid ${theme.colors.border}`,
+                      borderRadius: theme.borderRadius.md,
+                      fontSize: '1rem',
+                      outline: 'none',
+                      backgroundColor: theme.colors.white,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="volunteer">🙏 Voluntário</option>
+                    <option value="coordinator">👑 Coordenador</option>
+                  </select>
                 </div>
 
-                {/* Email */}
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: theme.colors.text.primary,
-                    marginBottom: '0.5rem'
-                  }}>
-                    Email
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: '1rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: theme.colors.text.secondary
+                {/* Personal Information Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1.5rem'
+                }}>
+                  {/* Name */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.5rem'
                     }}>
-                      <Mail size={18} />
+                      Nome Completo <span style={{ color: theme.colors.danger[500] }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: theme.colors.text.secondary
+                      }}>
+                        <User size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Nome completo do membro"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem 0.75rem 3rem',
+                          border: `1px solid ${errors.name ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = errors.name ? theme.colors.danger[500] : theme.colors.border;
+                        }}
+                      />
                     </div>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="email@exemplo.com"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem 0.75rem 3rem',
-                        border: `1px solid ${errors.email ? theme.colors.danger[500] : theme.colors.border}`,
-                        borderRadius: theme.borderRadius.md,
-                        fontSize: '1rem',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease-in-out'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = theme.colors.primary[500];
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = errors.email ? theme.colors.danger[500] : theme.colors.border;
-                      }}
-                    />
+                    {errors.name && (
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: theme.colors.danger[500],
+                        marginTop: '0.25rem'
+                      }}>
+                        {errors.name}
+                      </p>
+                    )}
                   </div>
-                  {errors.email && (
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: theme.colors.danger[500],
-                      marginTop: '0.25rem'
+
+                  {/* Email */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.5rem'
                     }}>
-                      {errors.email}
-                    </p>
-                  )}
+                      Email <span style={{ color: theme.colors.danger[500] }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: theme.colors.text.secondary
+                      }}>
+                        <Mail size={18} />
+                      </div>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="email@exemplo.com"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem 0.75rem 3rem',
+                          border: `1px solid ${errors.email ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = errors.email ? theme.colors.danger[500] : theme.colors.border;
+                        }}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: theme.colors.danger[500],
+                        marginTop: '0.25rem'
+                      }}>
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.5rem'
+                    }}>
+                      Telefone <span style={{ color: theme.colors.danger[500] }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: theme.colors.text.secondary
+                      }}>
+                        <Phone size={18} />
+                      </div>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="(11) 99999-9999"
+                        maxLength={15}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem 0.75rem 3rem',
+                          border: `1px solid ${errors.phone ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = errors.phone ? theme.colors.danger[500] : theme.colors.border;
+                        }}
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: theme.colors.danger[500],
+                        marginTop: '0.25rem'
+                      }}>
+                        {errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* CPF */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.5rem'
+                    }}>
+                      CPF <span style={{ color: theme.colors.danger[500] }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: theme.colors.text.secondary
+                      }}>
+                        <CreditCard size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        name="cpf"
+                        value={formData.cpf}
+                        onChange={handleInputChange}
+                        placeholder="123.456.789-00"
+                        maxLength={14}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem 0.75rem 3rem',
+                          border: `1px solid ${errors.cpf ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = errors.cpf ? theme.colors.danger[500] : theme.colors.border;
+                        }}
+                      />
+                    </div>
+                    {errors.cpf && (
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: theme.colors.danger[500],
+                        marginTop: '0.25rem'
+                      }}>
+                        {errors.cpf}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* RG */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: theme.colors.text.primary,
+                      marginBottom: '0.5rem'
+                    }}>
+                      RG <span style={{ color: theme.colors.danger[500] }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: theme.colors.text.secondary
+                      }}>
+                        <FileText size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        name="rg"
+                        value={formData.rg}
+                        onChange={handleInputChange}
+                        placeholder="12.345.678-9"
+                        maxLength={12}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem 0.75rem 3rem',
+                          border: `1px solid ${errors.rg ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease-in-out'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = errors.rg ? theme.colors.danger[500] : theme.colors.border;
+                        }}
+                      />
+                    </div>
+                    {errors.rg && (
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: theme.colors.danger[500],
+                        marginTop: '0.25rem'
+                      }}>
+                        {errors.rg}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Phone */}
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
+                {/* Address Section */}
+                <div style={{
+                  padding: '1.5rem',
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.borderRadius.lg,
+                  backgroundColor: theme.colors.gray[50]
+                }}>
+                  <h4 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
                     color: theme.colors.text.primary,
-                    marginBottom: '0.5rem'
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                   }}>
-                    Telefone
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: '1rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: theme.colors.text.secondary
-                    }}>
-                      <Phone size={18} />
+                    <MapPin size={18} />
+                    Endereço
+                  </h4>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '1rem',
+                    marginBottom: '1rem'
+                  }}>
+                    {/* CEP */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        CEP <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="zipCode"
+                        value={formData.address.zipCode}
+                        onChange={handleInputChange}
+                        placeholder="12345-678"
+                        maxLength={9}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.zipCode'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                      {errors['address.zipCode'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.zipCode']}
+                        </p>
+                      )}
                     </div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="(11) 99999-9999"
-                      maxLength={15}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem 0.75rem 3rem',
-                        border: `1px solid ${errors.phone ? theme.colors.danger[500] : theme.colors.border}`,
-                        borderRadius: theme.borderRadius.md,
-                        fontSize: '1rem',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease-in-out'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = theme.colors.primary[500];
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = errors.phone ? theme.colors.danger[500] : theme.colors.border;
-                      }}
-                    />
                   </div>
-                  {errors.phone && (
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: theme.colors.danger[500],
-                      marginTop: '0.25rem'
-                    }}>
-                      {errors.phone}
-                    </p>
-                  )}
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr',
+                    gap: '1rem',
+                    marginBottom: '1rem'
+                  }}>
+                    {/* Street */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Logradouro <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="address.street"
+                        value={formData.address.street}
+                        onChange={handleInputChange}
+                        placeholder="Rua, Avenida, etc."
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.street'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                      {errors['address.street'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.street']}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Number */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Número <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="address.number"
+                        value={formData.address.number}
+                        onChange={handleInputChange}
+                        placeholder="123"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.number'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                      {errors['address.number'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.number']}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 2fr',
+                    gap: '1rem',
+                    marginBottom: '1rem'
+                  }}>
+                    {/* Complement */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Complemento
+                      </label>
+                      <input
+                        type="text"
+                        name="address.complement"
+                        value={formData.address.complement}
+                        onChange={handleInputChange}
+                        placeholder="Apto, Casa, etc."
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                    </div>
+
+                    {/* Neighborhood */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Bairro <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="address.neighborhood"
+                        value={formData.address.neighborhood}
+                        onChange={handleInputChange}
+                        placeholder="Nome do bairro"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.neighborhood'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                      {errors['address.neighborhood'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.neighborhood']}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr',
+                    gap: '1rem'
+                  }}>
+                    {/* City */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Cidade <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="address.city"
+                        value={formData.address.city}
+                        onChange={handleInputChange}
+                        placeholder="Nome da cidade"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.city'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white
+                        }}
+                      />
+                      {errors['address.city'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.city']}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: theme.colors.text.primary,
+                        marginBottom: '0.5rem'
+                      }}>
+                        Estado <span style={{ color: theme.colors.danger[500] }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="address.state"
+                        value={formData.address.state}
+                        onChange={handleInputChange}
+                        placeholder="SP"
+                        maxLength={2}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: `1px solid ${errors['address.state'] ? theme.colors.danger[500] : theme.colors.border}`,
+                          borderRadius: theme.borderRadius.md,
+                          fontSize: '1rem',
+                          outline: 'none',
+                          backgroundColor: theme.colors.white,
+                          textTransform: 'uppercase'
+                        }}
+                      />
+                      {errors['address.state'] && (
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.danger[500],
+                          marginTop: '0.25rem'
+                        }}>
+                          {errors['address.state']}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Password - Only for new members */}
@@ -814,7 +1467,7 @@ export const MemberManagementPage: React.FC = () => {
                       color: theme.colors.text.primary,
                       marginBottom: '0.5rem'
                     }}>
-                      Senha Inicial
+                      Senha Inicial <span style={{ color: theme.colors.danger[500] }}>*</span>
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
@@ -867,37 +1520,6 @@ export const MemberManagementPage: React.FC = () => {
                     )}
                   </div>
                 )}
-
-                {/* User Type */}
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: theme.colors.text.primary,
-                    marginBottom: '0.5rem'
-                  }}>
-                    Tipo de Usuário
-                  </label>
-                  <select
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: `1px solid ${theme.colors.border}`,
-                      borderRadius: theme.borderRadius.md,
-                      fontSize: '1rem',
-                      outline: 'none',
-                      backgroundColor: theme.colors.white,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="volunteer">🙏 Voluntário</option>
-                    <option value="coordinator">👑 Coordenador</option>
-                  </select>
-                </div>
 
                 {/* Ministries */}
                 <div>
@@ -1007,7 +1629,7 @@ export const MemberManagementPage: React.FC = () => {
                     Cancelar
                   </button>
                   <button
-                    onClick={handleSubmit}
+                    type="submit"
                     disabled={isLoading}
                     style={{
                       flex: 1,
@@ -1056,7 +1678,7 @@ export const MemberManagementPage: React.FC = () => {
                     )}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -1129,6 +1751,26 @@ export const MemberManagementPage: React.FC = () => {
                       borderBottom: `1px solid ${theme.colors.border}`
                     }}>
                       Contato
+                    </th>
+                    <th style={{
+                      padding: '1rem',
+                      textAlign: 'left',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: theme.colors.text.primary,
+                      borderBottom: `1px solid ${theme.colors.border}`
+                    }}>
+                      Documentos
+                    </th>
+                    <th style={{
+                      padding: '1rem',
+                      textAlign: 'left',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: theme.colors.text.primary,
+                      borderBottom: `1px solid ${theme.colors.border}`
+                    }}>
+                      Endereço
                     </th>
                     <th style={{
                       padding: '1rem',
@@ -1241,6 +1883,53 @@ export const MemberManagementPage: React.FC = () => {
                             color: theme.colors.text.secondary
                           }}>
                             {member.phone}
+                          </p>
+                        </div>
+                      </td>
+                      <td style={{
+                        padding: '1rem',
+                        borderBottom: `1px solid ${theme.colors.border}`
+                      }}>
+                        <div>
+                          <p style={{
+                            fontSize: '0.875rem',
+                            color: theme.colors.text.primary,
+                            marginBottom: '0.25rem'
+                          }}>
+                            CPF: {member.cpf}
+                          </p>
+                          <p style={{
+                            fontSize: '0.75rem',
+                            color: theme.colors.text.secondary
+                          }}>
+                            RG: {member.rg}
+                          </p>
+                        </div>
+                      </td>
+                      <td style={{
+                        padding: '1rem',
+                        borderBottom: `1px solid ${theme.colors.border}`
+                      }}>
+                        <div>
+                          <p style={{
+                            fontSize: '0.875rem',
+                            color: theme.colors.text.primary,
+                            marginBottom: '0.25rem'
+                          }}>
+                            {member.address.street}, {member.address.number}
+                            {member.address.complement && `, ${member.address.complement}`}
+                          </p>
+                          <p style={{
+                            fontSize: '0.75rem',
+                            color: theme.colors.text.secondary
+                          }}>
+                            {member.address.neighborhood}, {member.address.city}/{member.address.state}
+                          </p>
+                          <p style={{
+                            fontSize: '0.75rem',
+                            color: theme.colors.text.secondary
+                          }}>
+                            CEP: {member.address.zipCode}
                           </p>
                         </div>
                       </td>
