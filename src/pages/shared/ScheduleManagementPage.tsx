@@ -14,9 +14,50 @@ import {
   Download,
   RefreshCw,
   X,
-  Save
+  Save,
+  MessageCircle
 } from 'lucide-react';
-import { theme } from '../../styles/theme';
+
+const theme = {
+  colors: {
+    primary: {
+      50: '#eff6ff',
+      500: '#3b82f6',
+    },
+    success: {
+      50: '#f0fdf4',
+      500: '#22c55e',
+    },
+    warning: {
+      50: '#fffbeb',
+      500: '#f59e0b',
+    },
+    danger: {
+      50: '#fef2f2',
+      500: '#ef4444',
+    },
+    gray: {
+      50: '#f9fafb',
+      100: '#f3f4f6',
+      400: '#9ca3af',
+    },
+    white: '#ffffff',
+    border: '#e5e7eb',
+    text: {
+      primary: '#111827',
+      secondary: '#6b7280',
+    }
+  },
+  borderRadius: {
+    md: '6px',
+    lg: '8px',
+    xl: '12px',
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  }
+};
 
 // Simulando dados de escalas
 const mockSchedules = [
@@ -645,6 +686,8 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
   );
 };
 
+
+
 // Main Component
 export const ScheduleManagementPage: React.FC = () => {
   const [schedules, setSchedules] = useState(mockSchedules);
@@ -1220,14 +1263,18 @@ export const ScheduleManagementPage: React.FC = () => {
             <button
               style={{
                 padding: '0.5rem 1rem',
-                backgroundColor: theme.colors.primary[500],
+                backgroundColor: '#25D366',
                 color: theme.colors.white,
                 border: 'none',
                 borderRadius: theme.borderRadius.md,
                 cursor: 'pointer',
-                fontSize: '0.875rem'
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
               }}
             >
+              <MessageCircle size={16} />
               Enviar Notificações
             </button>
           </div>
@@ -1246,4 +1293,5 @@ export const ScheduleManagementPage: React.FC = () => {
       />
     </div>
   );
-};
+}
+export default ScheduleManagementPage;
