@@ -1,9 +1,11 @@
+// src/pages/auth/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { theme } from '../../styles/theme';
+import { useAuth } from '../../context/AuthContext'; // Importar useAuth
 
-// Ícone de igreja personalizado
+// Ícone de igreja personalizado (já existe no seu componente ChurchIcon.tsx)
 const ChurchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = "white" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="9" y="4" width="6" height="16" stroke={color} strokeWidth="1.5" fill="none"/>
@@ -20,8 +22,10 @@ const ChurchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, co
   </svg>
 );
 
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth(); // Usar o hook useAuth para acessar a função login
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -69,9 +73,17 @@ export const LoginPage: React.FC = () => {
     // Simula chamada de API
     setTimeout(() => {
       setIsLoading(false);
-      // Mock login - em produção fazer chamada real para API
-      console.log('Login realizado:', formData);
-      navigate('/');
+      // Mock login: baseia o papel no email para fins de demonstração
+      // Em um projeto real, a API retornaria o papel do usuário.
+      if (formData.email === 'coordinator@paroquia.com' && formData.password === 'password') {
+        login('coordinator');
+        navigate('/'); // Redireciona para a homepage padrão (coordenador)
+      } else if (formData.email === 'volunteer@paroquia.com' && formData.password === 'password') {
+        login('volunteer');
+        navigate('/'); // Redireciona para a homepage padrão (voluntário se homepage estiver adaptada)
+      } else {
+        setErrors({ general: 'Email ou senha inválidos' }); // Erro geral
+      }
     }, 1500);
   };
 
@@ -261,6 +273,13 @@ export const LoginPage: React.FC = () => {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Mensagem de erro geral */}
+              {errors.general && (
+                <p style={{ fontSize: '0.875rem', color: theme.colors.danger[500], textAlign: 'center' }}>
+                  {errors.general}
+                </p>
+              )}
+
               {/* Email Field */}
               <div>
                 <label style={{

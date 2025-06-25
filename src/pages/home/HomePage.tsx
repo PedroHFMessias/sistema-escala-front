@@ -1,8 +1,10 @@
+// src/pages/home/HomePage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, UserCheck, Settings, ChevronDown } from 'lucide-react';
 import { theme } from '../../styles/theme';
 import { ChurchIcon } from '../../components/ui/ChurchIcon';
+import { useAuth } from '../../context/AuthContext'; // Importar useAuth
 
 interface MenuOption {
   id: string;
@@ -25,11 +27,10 @@ interface SubMenuItem {
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { userRole } = useAuth(); // Obter o userRole do contexto
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  
-  // Mock do tipo de usuário - será implementado com autenticação posteriormente
-  const userType: 'coordinator' | 'volunteer' = 'coordinator';
 
+  // Adaptação dos submenus com base no userRole do contexto
   const cadastrosSubmenu: SubMenuItem[] = [
     {
       id: 'ministerios',
@@ -47,13 +48,13 @@ export const HomePage: React.FC = () => {
     }
   ];
 
-  const escalasSubmenu: SubMenuItem[] = userType === 'coordinator' ? [
+  const escalasSubmenu: SubMenuItem[] = userRole === 'coordinator' ? [
     {
       id: 'gerenciar-escalas',
       title: 'Gerenciar Escalas',
-      description: 'Criar e editar escalas',
       icon: <Settings size={20} />,
-      path: '/escalas/gerenciar'
+      path: '/escalas/gerenciar',
+      description: 'Criar e editar escalas',
     },
     {
       id: 'visualizar-escalas',
@@ -93,7 +94,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'escalas',
       title: 'Escalas',
-      description: userType === 'coordinator' ? 'Criar e gerenciar escalas das missas' : 'Visualizar e confirmar suas escalas',
+      description: userRole === 'coordinator' ? 'Criar e gerenciar escalas das missas' : 'Visualizar e confirmar suas escalas',
       icon: <Calendar size={32} />,
       color: theme.colors.secondary[500],
       userType: 'both',
@@ -103,15 +104,16 @@ export const HomePage: React.FC = () => {
     {
       id: 'confirmacoes',
       title: 'Confirmações',
-      description: 'Confirmar participação ou solicitar trocas',
+      description: 'Visualizar as escalas confirmadas',
       icon: <UserCheck size={32} />,
       color: theme.colors.success[500],
       userType: 'volunteer'
     }
   ];
 
+  // Filtra as opções de menu com base no userRole obtido do contexto
   const filteredOptions = menuOptions.filter(
-    option => option.userType === 'both' || option.userType === userType
+    option => option.userType === 'both' || option.userType === userRole
   );
 
   const handleOptionClick = (option: MenuOption) => {
@@ -137,19 +139,19 @@ export const HomePage: React.FC = () => {
     <div style={{ padding: '2rem', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {/* Header Section */}
-        <div style={{ 
+        <div style={{
           textAlign: 'center',
           marginBottom: '4rem'
         }}>
-          <h2 style={{ 
-            fontSize: '2rem', 
-            fontWeight: '600', 
+          <h2 style={{
+            fontSize: '2rem',
+            fontWeight: '600',
             color: theme.colors.text.primary,
             marginBottom: '1rem'
           }}>
             Bem-vindo ao Sistema de Escalas
           </h2>
-          <p style={{ 
+          <p style={{
             color: theme.colors.text.secondary,
             fontSize: '1.125rem',
             lineHeight: '1.6',
@@ -163,16 +165,18 @@ export const HomePage: React.FC = () => {
         {/* Main Content - Two Column Layout */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
+          // Adapta o layout da grade principal com base no userRole
+          gridTemplateColumns: userRole === 'coordinator' ? '2fr 1fr' : '1fr 1fr', // Coordenador 2:1, Voluntário 1:1
           gap: '4rem',
           alignItems: 'start'
         }}>
-          
+
           {/* Left Side - Menu Grid */}
           <div>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: userType === 'coordinator' ? 'repeat(2, 1fr)' : '1fr',
+              // Adapta o número de colunas dos cartões de menu com base no userRole
+              gridTemplateColumns: userRole === 'coordinator' ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
               gap: '1.5rem',
               position: 'relative'
             }}>
@@ -218,9 +222,9 @@ export const HomePage: React.FC = () => {
                       background: `linear-gradient(135deg, ${option.color}08, ${option.color}15)`,
                       borderRadius: '0 0 0 80px'
                     }}></div>
-                    
+
                     {/* Icon */}
-                    <div 
+                    <div
                       style={{
                         padding: '1.5rem',
                         borderRadius: '20px',
@@ -235,7 +239,7 @@ export const HomePage: React.FC = () => {
                     >
                       {option.icon}
                     </div>
-                    
+
                     {/* Content */}
                     <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
                       <h3 style={{
@@ -266,8 +270,8 @@ export const HomePage: React.FC = () => {
                       justifyContent: 'center'
                     }}>
                       {option.hasSubmenu ? (
-                        <ChevronDown 
-                          size={16} 
+                        <ChevronDown
+                          size={16}
                           color={option.color}
                           style={{
                             transform: openSubmenu === option.id ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -381,11 +385,11 @@ export const HomePage: React.FC = () => {
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {userType === 'coordinator' ? (
+                {userRole === 'coordinator' ? (
                   <>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '1rem',
                       padding: '1rem',
                       backgroundColor: theme.colors.primary[50],
@@ -401,26 +405,26 @@ export const HomePage: React.FC = () => {
                         <Users size={20} />
                       </div>
                       <div>
-                        <p style={{ 
-                          fontSize: '1.25rem', 
-                          fontWeight: '700', 
+                        <p style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '700',
                           color: theme.colors.primary[600],
                           marginBottom: '0.25rem'
                         }}>
                           24
                         </p>
-                        <p style={{ 
-                          fontSize: '0.75rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Voluntários Ativos
                         </p>
                       </div>
                     </div>
-                    
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '1rem',
                       padding: '1rem',
                       backgroundColor: theme.colors.secondary[50],
@@ -436,26 +440,26 @@ export const HomePage: React.FC = () => {
                         <Calendar size={20} />
                       </div>
                       <div>
-                        <p style={{ 
-                          fontSize: '1.25rem', 
-                          fontWeight: '700', 
+                        <p style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '700',
                           color: theme.colors.secondary[600],
                           marginBottom: '0.25rem'
                         }}>
                           7
                         </p>
-                        <p style={{ 
-                          fontSize: '0.75rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Escalas Pendentes
                         </p>
                       </div>
                     </div>
-                    
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '1rem',
                       padding: '1rem',
                       backgroundColor: theme.colors.success[50],
@@ -471,17 +475,17 @@ export const HomePage: React.FC = () => {
                         <UserCheck size={20} />
                       </div>
                       <div>
-                        <p style={{ 
-                          fontSize: '1.25rem', 
-                          fontWeight: '700', 
+                        <p style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '700',
                           color: theme.colors.success[600],
                           marginBottom: '0.25rem'
                         }}>
                           18
                         </p>
-                        <p style={{ 
-                          fontSize: '0.75rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Confirmações Hoje
                         </p>
@@ -490,9 +494,9 @@ export const HomePage: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '1rem',
                       padding: '1rem',
                       backgroundColor: theme.colors.primary[50],
@@ -508,26 +512,26 @@ export const HomePage: React.FC = () => {
                         <Calendar size={20} />
                       </div>
                       <div>
-                        <p style={{ 
-                          fontSize: '1.25rem', 
-                          fontWeight: '700', 
+                        <p style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '700',
                           color: theme.colors.primary[600],
                           marginBottom: '0.25rem'
                         }}>
                           3
                         </p>
-                        <p style={{ 
-                          fontSize: '0.75rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Próximas Escalas
                         </p>
                       </div>
                     </div>
-                    
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '1rem',
                       padding: '1rem',
                       backgroundColor: theme.colors.warning[50],
@@ -543,17 +547,17 @@ export const HomePage: React.FC = () => {
                         <UserCheck size={20} />
                       </div>
                       <div>
-                        <p style={{ 
-                          fontSize: '1.25rem', 
-                          fontWeight: '700', 
+                        <p style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '700',
                           color: theme.colors.warning[600],
                           marginBottom: '0.25rem'
                         }}>
                           1
                         </p>
-                        <p style={{ 
-                          fontSize: '0.75rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Pendente Confirmação
                         </p>
@@ -580,11 +584,11 @@ export const HomePage: React.FC = () => {
                 marginBottom: '1rem',
                 textAlign: 'center'
               }}>
-                {userType === 'coordinator' ? 'Atividades Recentes' : 'Próximas Atividades'}
+                {userRole === 'coordinator' ? 'Atividades Recentes' : 'Próximas Atividades'}
               </h4>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {userType === 'coordinator' ? (
+                {userRole === 'coordinator' ? (
                   <>
                     <div style={{
                       display: 'flex',
@@ -601,49 +605,18 @@ export const HomePage: React.FC = () => {
                         backgroundColor: theme.colors.success[500]
                       }}></div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ 
-                          fontSize: '0.8rem', 
+                        <p style={{
+                          fontSize: '0.8rem',
                           fontWeight: '500',
-                          color: theme.colors.text.primary 
+                          color: theme.colors.text.primary
                         }}>
                           Maria Silva confirmou
                         </p>
-                        <p style={{ 
-                          fontSize: '0.7rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.7rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Há 15 min
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem',
-                      backgroundColor: theme.colors.gray[50],
-                      borderRadius: theme.borderRadius.md
-                    }}>
-                      <div style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: theme.colors.warning[500]
-                      }}></div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ 
-                          fontSize: '0.8rem', 
-                          fontWeight: '500',
-                          color: theme.colors.text.primary 
-                        }}>
-                          João solicitou troca
-                        </p>
-                        <p style={{ 
-                          fontSize: '0.7rem', 
-                          color: theme.colors.text.secondary 
-                        }}>
-                          Há 1 hora
                         </p>
                       </div>
                     </div>
@@ -660,19 +633,50 @@ export const HomePage: React.FC = () => {
                         width: '8px',
                         height: '8px',
                         borderRadius: '50%',
+                        backgroundColor: theme.colors.warning[500]
+                      }}></div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{
+                          fontSize: '0.8rem',
+                          fontWeight: '500',
+                          color: theme.colors.text.primary
+                        }}>
+                          João solicitou troca
+                        </p>
+                        <p style={{
+                          fontSize: '0.7rem',
+                          color: theme.colors.text.secondary
+                        }}>
+                          Há 1 hora
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      backgroundColor: theme.colors.primary[500],
+                      borderRadius: theme.borderRadius.md
+                    }}>
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
                         backgroundColor: theme.colors.primary[500]
                       }}></div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ 
-                          fontSize: '0.8rem', 
+                        <p style={{
+                          fontSize: '0.8rem',
                           fontWeight: '500',
-                          color: theme.colors.text.primary 
+                          color: theme.colors.text.primary
                         }}>
                           Escala criada
                         </p>
-                        <p style={{ 
-                          fontSize: '0.7rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.7rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Há 3 horas
                         </p>
@@ -697,22 +701,22 @@ export const HomePage: React.FC = () => {
                         backgroundColor: theme.colors.primary[500]
                       }}></div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ 
-                          fontSize: '0.8rem', 
+                        <p style={{
+                          fontSize: '0.8rem',
                           fontWeight: '500',
-                          color: theme.colors.text.primary 
+                          color: theme.colors.text.primary
                         }}>
                           Missa 19h - Dom
                         </p>
-                        <p style={{ 
-                          fontSize: '0.7rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.7rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Em 2 dias
                         </p>
                       </div>
                     </div>
-                    
+
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -729,16 +733,16 @@ export const HomePage: React.FC = () => {
                         backgroundColor: theme.colors.warning[500]
                       }}></div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ 
-                          fontSize: '0.8rem', 
+                        <p style={{
+                          fontSize: '0.8rem',
                           fontWeight: '500',
-                          color: theme.colors.text.primary 
+                          color: theme.colors.text.primary
                         }}>
                           Missa 8h - Dom
                         </p>
-                        <p style={{ 
-                          fontSize: '0.7rem', 
-                          color: theme.colors.text.secondary 
+                        <p style={{
+                          fontSize: '0.7rem',
+                          color: theme.colors.text.secondary
                         }}>
                           Confirmar
                         </p>
@@ -783,19 +787,19 @@ export const HomePage: React.FC = () => {
                   Paróquia Santana
                 </h3>
               </div>
-              
+
               <p style={{
                 fontSize: '0.8rem',
                 color: theme.colors.text.secondary,
                 lineHeight: '1.5',
                 marginBottom: '1rem'
               }}>
-                {userType === 'coordinator' 
+                {userRole === 'coordinator'
                   ? 'Gerencie com eficiência todas as atividades da nossa comunidade.'
                   : 'Sua participação é essencial para nossa comunidade de fé.'
                 }
               </p>
-              
+
               <div style={{
                 padding: '0.75rem',
                 backgroundColor: theme.colors.white,

@@ -1,3 +1,4 @@
+// src/router/AppRouter.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout'
@@ -8,6 +9,7 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 // Coordinator Pages
 import { MinistryManagementPage } from '../pages/coordinator/MinistryManagementePage';
 import { MemberManagementPage } from '../pages/coordinator/MemberManagementPage';
+import { ReportsPage } from '../pages/coordinator/ReportsPage'; // Adicionar ReportsPage
 
 // Volunteer Pages
 import { VolunteerSchedulePage } from '../pages/volunteer/VolunteerSchedulePage';
@@ -15,6 +17,10 @@ import { VolunteerConfirmationPage } from '../pages/volunteer/VolunteerConfirmat
 
 // Shared Pages
 import { ScheduleManagementPage } from '../pages/shared/ScheduleManagementPage';
+import { ScheduleViewPage } from '../pages/shared/ScheduleViewPage'; // Adicionar ScheduleViewPage
+
+import { useAuth } from '../context/AuthContext'; // Importar useAuth
+
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -23,15 +29,15 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  // Mock authentication - será substituído por contexto real
-  const isAuthenticated = true; // Mock
-  const userRole: 'coordinator' | 'volunteer' = 'coordinator'; // Mock
+  const { isAuthenticated, userRole } = useAuth(); // Obter do contexto
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   if (requiredRole && userRole !== requiredRole) {
+    // Redireciona para a home se o papel não corresponder, ou para login se não autenticado.
+    // A HomePage se adaptará ao userRole.
     return <Navigate to="/" replace />;
   }
 
@@ -39,6 +45,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
 };
 
 export const AppRouter: React.FC = () => {
+  // Removido 'const { userRole } = useAuth();' pois não é usado diretamente aqui
+  // A lógica de userRole no Layout e ProtectedRoute é independente desta linha
+
   return (
     <Router>
       <Routes>
@@ -80,6 +89,14 @@ export const AppRouter: React.FC = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/relatorios" element={
+          <ProtectedRoute requiredRole="coordinator">
+            <Layout>
+              <ReportsPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
         {/* Schedule Management - Coordinator */}
         <Route path="/escalas/gerenciar" element={
           <ProtectedRoute requiredRole="coordinator">
@@ -106,11 +123,11 @@ export const AppRouter: React.FC = () => {
           </ProtectedRoute>
         } />
 
-        {/* Shared Routes - Schedule Viewing */}
+        {/* Shared Routes - Schedule Viewing (available for both, check Layout for display logic) */}
         <Route path="/escalas" element={
           <ProtectedRoute>
             <Layout>
-              <ScheduleManagementPage />
+              <ScheduleViewPage />
             </Layout>
           </ProtectedRoute>
         } />
